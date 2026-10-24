@@ -875,6 +875,25 @@ function request(raw, model, effort, fast) {
   return { id: model === "auto" ? "default" : model, params: [], maxMode: false }
 }
 
+// What a model's own maker charges outside the subscription, per million
+// tokens (xAI, Moonshot and Zhipu's lists, October 2026): the card's cost
+// says what the same tokens would cost bought there. Cursor's own — Auto,
+// Composer — and a model no one sells by itself stay 0, honestly unknown
+// rather than guessed.
+const OUTSIDE = {
+  "grok-4.7": { input: 2, output: 6, cache: { read: 0.5, write: 0 } },
+  "grok-4.6": { input: 2, output: 6, cache: { read: 0.5, write: 0 } },
+  "grok-4.5": { input: 2, output: 6, cache: { read: 0.5, write: 0 } },
+  "kimi-k3": { input: 3, output: 15, cache: { read: 0.3, write: 0 } },
+  "kimi-k2.7-code": { input: 0.95, output: 4, cache: { read: 0.19, write: 0 } },
+  "claude-opus-5-5": { input: 4, output: 20, cache: { read: 0.2, write: 5 } },
+  "claude-haiku-5-5": { input: 0.1, output: 0.5, cache: { read: 0.01, write: 0.125 } },
+  "deepseek": { input: 0.3, output: 1.2, cache: { read: 0.006, write: 0 } },
+  "glm-5.2": { input: 1.4, output: 4.4, cache: { read: 0.26, write: 0 } },
+  "glm-5p3": { input: 1.4, output: 4.4, cache: { read: 0.26, write: 0 } },
+  "glm-5p3-flash": { input: 0.15, output: 0.5, cache: { read: 0.03, write: 0 } },
+}
+
 function runtimeModel(m) {
   const efforts = LEVEL_RANK.filter((l) => l in m.levels)
   return {
@@ -885,7 +904,7 @@ function runtimeModel(m) {
     status: "active",
     headers: {},
     options: {},
-    cost: { input: 0, output: 0, cache: { read: 0, write: 0 } },
+    cost: OUTSIDE[m.id.replace(/@[^@]*$/, "")] ?? { input: 0, output: 0, cache: { read: 0, write: 0 } },
     limit: { context: m.context || DEFAULT_CONTEXT, output: 0 },
     capabilities: {
       temperature: false,

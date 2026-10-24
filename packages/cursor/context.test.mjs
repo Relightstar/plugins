@@ -91,6 +91,21 @@ test("the provider's list, efforts as variants, no model of its own for fast or 
   expect(Object.keys(list).some((id) => /-fast$|-(low|medium|high)$/.test(id))).toBe(false)
 })
 
+test("a model its maker sells outside the subscription is priced as there; Cursor's own and unpriced stay 0", async () => {
+  fakeAPI()
+  const hooks = await CursorAuthPlugin()
+  const jwt = ["e30", Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 7200 + ++n })).toString("base64url"), "s"].join(".")
+  const list = await hooks.provider.models({ models: {} }, { auth: { type: "oauth", access: jwt, refresh: "", expires: 0 } })
+  expect(list["grok-4.7@256k"].cost).toEqual({ input: 2, output: 6, cache: { read: 0.5, write: 0 } })
+  expect(list["grok-4.7@500k"].cost).toEqual({ input: 2, output: 6, cache: { read: 0.5, write: 0 } })
+  expect(list["grok-4.6"].cost).toEqual({ input: 2, output: 6, cache: { read: 0.5, write: 0 } })
+  expect(list["claude-opus-5-5@300k"].cost).toEqual({ input: 4, output: 20, cache: { read: 0.2, write: 5 } })
+  // Cursor's own, Auto's mix, and a model no one sells by itself, stay 0
+  expect(list["composer-2.5"].cost).toEqual({ input: 0, output: 0, cache: { read: 0, write: 0 } })
+  expect(list.auto.cost).toEqual({ input: 0, output: 0, cache: { read: 0, write: 0 } })
+  expect(list["max-only"].cost).toEqual({ input: 0, output: 0, cache: { read: 0, write: 0 } })
+})
+
 test("fast is said on the models Cursor has a fast variant of, at that size, and only those (yetone/magpie#1360)", async () => {
   const fastOf = async (usableIDs) => {
     fakeAPI(PICKER, usableIDs)
